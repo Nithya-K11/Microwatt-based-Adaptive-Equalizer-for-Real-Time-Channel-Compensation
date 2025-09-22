@@ -36,9 +36,13 @@ The **Microwatt CPU** will serve as the system's brain. It will manage data flow
 * Managing communication between the custom hardware modules via the **Wishbone bus**.
 * Executing the LMS algorithm, which calculates the error signal and updates the FIR filter coefficients.
 
-This division of labor—with the Microwatt for control and custom hardware for the computationally intensive DSP tasks—is an ideal demonstration of efficient System-on-Chip (SoC) design.
 
 ***
+
+### 4. Architecture Diagram
+<p align="center">
+  <img src="Block_Diagram.png" alt="System Block Diagram" width="700"/>
+</p>
 
 
 
