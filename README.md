@@ -1,75 +1,51 @@
-# OpenFrame Overview
+# Microwatt-based Adaptive Equalizer for Real-Time Channel Compensation
 
-The OpenFrame Project provides an empty harness chip that differs significantly from the Caravel and Caravan designs. Unlike Caravel and Caravan, which include integrated SoCs and additional features, OpenFrame offers only the essential padframe, providing users with a clean slate for their custom designs.
+## 📝 Project Proposal
 
-<img width="256" alt="Screenshot 2024-06-24 at 12 53 39 PM" src="https://github.com/efabless/openframe_timer_example/assets/67271180/ff58b58b-b9c8-4d5e-b9bc-bf344355fa80">
+### 1. Abstract
 
-## Key Characteristics of OpenFrame
+This project proposes the design and implementation of a real-time adaptive channel equalizer on a Field-Programmable Gate Array (FPGA), with the goal of ultimately targeting an ASIC fabrication. The system will leverage the open-source **Microwatt POWER-based CPU** as a central control element. This project aims to demonstrate a fundamental solution to a key problem in digital communications: channel impairments such as **Inter-Symbol Interference (ISI)**. The solution will involve a hardware-accelerated **Least Mean Square (LMS)** algorithm to automatically and dynamically compensate for a simulated channel's effects, ensuring accurate data recovery. This project is a sophisticated demonstration of a hardware-software co-design approach that contributes a practical, functional system to the open hardware ecosystem.
 
-1. **Minimalist Design:** 
-   - No integrated SoC or additional circuitry.
-   - Only includes the padframe, a power-on-reset circuit, and a digital ROM containing the 32-bit project ID.
+***
 
-2. **Padframe Compatibility:**
-   - The padframe design and pin placements match those of the Caravel and Caravan chips, ensuring compatibility and ease of transition between designs.
-   - Pin types are identical, with power and ground pins positioned similarly and the same power domains available.
+### 2. Problem Statement
 
-3. **Flexibility:**
-   - Provides full access to all GPIO controls.
-   - Maximizes the user project area, allowing for greater customization and integration of alternative SoCs or user-specific projects at the same hierarchy level.
+In any digital communication system, the signal transmitted is inevitably distorted by the physical channel. This distortion is caused by effects like multipath propagation and frequency-selective fading, which cause the signal to spread in time, leading to **Inter-Symbol Interference (ISI)**. Without compensation, this can significantly increase the bit error rate, making high-speed, reliable communication impossible. Implementing real-time solutions to this problem in hardware is a significant challenge and a key area of expertise in modern System-on-Chip (SoC) design.
 
-4. **Simplified I/O:**
-   - Pins that previously connected to CPU functions (e.g., flash controller interface, SPI interface, UART) are now repurposed as general-purpose I/O, offering flexibility for various applications.
+***
 
-The OpenFrame harness is ideal for those looking to implement custom SoCs or integrate user projects without the constraints of an existing SoC.
+### 3. Proposed Solution
 
-## Features
+The project will build a complete communication subsystem on a single chip, utilizing a sophisticated hardware-software co-design approach. The Microwatt core's architecture will be the foundation for this design. The Microwatt core is a **64-bit OpenPOWER (ppc64le) ISA** written in **VHDL 2008**.
 
-1. 44 configurable GPIOs.
-2. User area of approximately 15mm².
-3. Supports digital, analog, or mixed-signal designs.
+#### 3.1. Hardware Architecture
 
-# openframe_timer_example
+The system will consist of three main custom hardware blocks integrated with the Microwatt CPU, all residing on a single FPGA. The overall system will fit within the structure of a Microwatt SoC.
 
-This example implements a simple timer and connects it to the GPIOs.
+* **Simulated Channel Module:** A custom Verilog/VHDL module will be designed to act as a realistic, yet controllable, communication channel. This module will intentionally apply known distortions (e.g., ISI) to a clean input signal, providing a predictable environment for debugging and testing the equalizer.
+* **Adaptive Equalizer Module:** The core of the system will be an adaptive **Finite Impulse Response (FIR) filter** implemented as a dedicated hardware block. This filter's coefficients will be dynamically adjusted by the LMS algorithm to create an inverse model of the simulated channel. This dedicated hardware handles the computationally intensive multiplication and accumulation operations.
+* **Audio Interface (I2S):** The system will use an I2S audio interface to output the equalized signal, allowing for a tangible, audible demonstration of the system's performance.
 
-## Installation and Setup
 
-First, clone the repository:
 
-```bash
-git clone https://github.com/efabless/openframe_timer_example.git
-cd openframe_timer_example
-```
+#### 3.2. Software and System Control
 
-Then, download all dependencies:
+The **Microwatt CPU** will serve as the system's brain. It will manage data flow and execute the software that handles the LMS algorithm's core logic. The CPU's role includes:
 
-```bash
-make setup
-```
+* Loading the training sequence data into the system's memory.
+* Managing communication between the custom hardware modules via the **Wishbone bus**.
+* Executing the LMS algorithm, which calculates the error signal and updates the FIR filter coefficients.
 
-## Hardening the Design
+This division of labor—with the Microwatt for control and custom hardware for the computationally intensive DSP tasks—is an ideal demonstration of efficient System-on-Chip (SoC) design.
 
-In this example, we will harden the timer. You will need to harden your own design similarly.
+***
 
-```bash
-make user_proj_timer
-```
 
-Once you have hardened your design, integrate it into the OpenFrame wrapper:
 
-```bash
-make openframe_project_wrapper
-```
 
-## Important Notes
 
-1. **Connecting to Power:**
-   - Ensure your design is connected to power using the power pins on the wrapper.
-   - Use the `vccd1_connection` and `vssd1_connection` macros, which contain the necessary vias and nets for power connections.
+### 4. Licensing
 
-2. **Flattening the Design:**
-   - If you plan to flatten your design within the `openframe_project_wrapper`, do not buffer the analog pins using standard cells.
+This project is released under the **Apache License 2.0**. This is a permissive license that allows for the free use, modification, and distribution of the hardware and software for both commercial and non-commercial purposes. A full copy of the license is available in the `LICENSE` file in this repository.
 
-3. **Running Custom Steps:**
-   - Execute the custom step in OpenLane that copies the power pins from the template DEF. If this step is skipped, the precheck will fail, and your design will not be powered.
+---
